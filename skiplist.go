@@ -200,7 +200,7 @@ func (list *SkipList) Get(key interface{}) *Element {
 
 // Gets an element.
 // Returns element pointer if found, default if not found.
-func (list *SkipList) Get(key interface{}, default interface{}) *Element {
+func (list *SkipList) GetDefault(key interface{}, default interface{}) *Element {
 	var prev *elementNode = &list.elementNode
 	var next *Element
 	score := getScore(key, list.reversed)
