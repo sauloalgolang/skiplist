@@ -197,6 +197,32 @@ func (list *SkipList) Get(key interface{}) *Element {
 	return nil
 }
 
+
+// Gets an element.
+// Returns element pointer if found, default if not found.
+func (list *SkipList) Get(key interface{}, default interface{}) *Element {
+	var prev *elementNode = &list.elementNode
+	var next *Element
+	score := getScore(key, list.reversed)
+
+	for i := list.level - 1; i >= 0; i-- {
+		next = prev.next[i]
+
+		for next != nil &&
+			(score > next.score || (score == next.score && list.keyFunc.Compare(key, next.key))) {
+			prev = &next.elementNode
+			next = next.next[i]
+		}
+	}
+
+	if next != nil && score == next.score && !list.keyFunc.Compare(next.key, key) {
+		return next
+	}
+
+	return default
+}
+
+
 // Gets a value. It's a short hand for Get().Value.
 // Returns value and its existence status.
 func (list *SkipList) GetValue(key interface{}) (interface{}, bool) {
