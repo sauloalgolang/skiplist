@@ -173,6 +173,41 @@ func (list *SkipList) Set(key, value interface{}) *Element {
 	return element
 }
 
+// Sets a value in the list with key.
+// If the key exists, change element value to the new one.
+// Returns new element pointer.
+func (list *SkipList) Increment(key interface{}) *Element {
+	var element *Element
+
+	score := getScore(key, list.reversed)
+	prevs := list.getPrevElementNodes(key, score)
+
+	// found an element with the same key, replace its value
+	if element = prevs[0].next[0]; element != nil && !list.keyFunc.Compare(element.key, key) {
+		if element.Value.(uint8) < 254 {
+			element.Value = element.Value.(uint8) + 1
+		}
+		return element
+	}
+
+	element = &Element{
+		elementNode: elementNode{
+			next: make([]*Element, list.randLevel()),
+		},
+		key:   key,
+		score: score,
+		Value: uint8(0),
+	}
+
+	for i := range element.next {
+		element.next[i] = prevs[i].next[i]
+		prevs[i].next[i] = element
+	}
+
+	list.length++
+	return element
+}
+
 // Gets an element.
 // Returns element pointer if found, nil if not found.
 func (list *SkipList) Get(key interface{}) *Element {
@@ -197,32 +232,6 @@ func (list *SkipList) Get(key interface{}) *Element {
 	return nil
 }
 
-
-// Gets an element.
-// Returns element pointer if found, default if not found.
-func (list *SkipList) GetDefault(key interface{}, defaultValue interface{}) *Element {
-	var prev *elementNode = &list.elementNode
-	var next *Element
-	score := getScore(key, list.reversed)
-
-	for i := list.level - 1; i >= 0; i-- {
-		next = prev.next[i]
-
-		for next != nil &&
-			(score > next.score || (score == next.score && list.keyFunc.Compare(key, next.key))) {
-			prev = &next.elementNode
-			next = next.next[i]
-		}
-	}
-
-	if next != nil && score == next.score && !list.keyFunc.Compare(next.key, key) {
-		return next
-	}
-
-	return defaultValue
-}
-
-
 // Gets a value. It's a short hand for Get().Value.
 // Returns value and its existence status.
 func (list *SkipList) GetValue(key interface{}) (interface{}, bool) {
@@ -230,6 +239,19 @@ func (list *SkipList) GetValue(key interface{}) (interface{}, bool) {
 
 	if element == nil {
 		return nil, false
+	}
+
+	return element.Value, true
+}
+
+
+// Gets a value. It's a short hand for Get().Value.
+// Returns value and its existence status. default
+func (list *SkipList) GetValueDefault(key, defaultValue interface{}) (interface{}, bool) {
+	element := list.Get(key)
+
+	if element == nil {
+		return defaultValue, true
 	}
 
 	return element.Value, true
